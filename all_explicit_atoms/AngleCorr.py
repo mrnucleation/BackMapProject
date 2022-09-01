@@ -30,6 +30,8 @@ def main():
     framenum = -1
     while True:
         framenum += 1
+        if framenum > 5:
+            break
         try:
             frame = read_lammps_dump(filename, index=framenum)
         except IndexError as e:
@@ -82,11 +84,11 @@ def main():
          #C9- N-Butyl 3st Carbon from N2 - AtmNum 26
          #C10- N-Butyl 4st Carbon from N2 - AtmNum 33
         subpairs = [
-                [18, 54], #C6-C17
-                [55, 54], #O1-C17
-                [53, 54], #N1-C17
-                [53, 14], #N1-C5
-                [11, 53], #N1-C4
+#                [18, 54], #C6-C17
+#                [55, 54], #O1-C17
+#                [53, 54], #N1-C17
+#                [53, 14], #N1-C5
+#                [11, 53], #N1-C4
 
 #                [18, 56], #C6-C18
 #                [57, 56], #O2-C18
@@ -95,13 +97,13 @@ def main():
 #                [58, 20]  #N2-C7
                 ] 
         subtrips = [
-                [18, 54, 55], #CH-C(O1)-O1
-                [18, 54, 53], #CH-C(O1)-N1
-                [55, 54, 53], #O1-C(O1)-N1
+#                [18, 54, 55], #CH-C(O1)-O1
+#                [18, 54, 53], #CH-C(O1)-N1
+#                [55, 54, 53], #O1-C(O1)-N1
 
-                [54, 53, 14], #C(O1)-N1-CH3
-                [11, 53, 14], #CH2  -N1-CH3
-                [54, 53, 11], #C(O1)-N1-CH2
+#                [54, 53, 14], #C(O1)-N1-CH3
+#                [11, 53, 14], #CH2  -N1-CH3
+#                [54, 53, 11], #C(O1)-N1-CH2
 
 #                [18, 56, 55], #CH-C(O2)-O2
 #                [18, 56, 58], #CH-C(O2)-N2
@@ -114,11 +116,13 @@ def main():
         subquads = [
                 [18,56,53,11], #CH-C(O1)-N1-CH2
                 [56,53,11,8], #C(O1)-N1-CH2-CH2
+                [55,56,53,11], #O1-C(O1)-N1-CH2
                 [14,53,11,8], #CH3-N1-CH2-CH2
                 [53,11,8,5], #N1-CH2-CH2-CH2
 
 #                [18,54,58,20], #CH-C(O2)-N2-CH2
 #                [54,58,20,23], #C(O2)-N2-CH2-CH2
+#                [57,56,53,11], #O2-C(O2)-N2-CH2
 #                [33,58,23,26], #CH3-N2-CH2-CH2
 #                [58,20,23,26], #N2-CH2-CH2-CH2
                 ] 

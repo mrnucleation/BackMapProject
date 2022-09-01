@@ -40,28 +40,28 @@ def main():
     #O1 - AMD Group 1 - Atom Number 15
     #O2 - AMD Group 1 - Atom Number 16
     subpairs = [
-#              [15, 4], #Pair O1-C3
-#              [15, 5], #Pair O1-CH
-              [16, 6], #Pair O2-C4
-              [16, 5] #Pair O2-CH
+              [15, 4], #Pair O1-C3
+              [15, 5], #Pair O1-CH
+#              [16, 6], #Pair O2-C4
+#              [16, 5] #Pair O2-CH
             ] 
     subtrips = [
-#              [5, 15, 4], #Angle CH-O1-C3
-#              [10, 5, 15], #Angle C7-CH-O1
-              [5, 16, 6], #Angle CH-O2-C4
-              [10, 5, 16] #Angle C7-CH-O2
+              [5, 15, 4], #Angle CH-O1-C3
+              [10, 5, 15], #Angle C7-CH-O1
+#              [5, 16, 6], #Angle CH-O2-C4
+#              [10, 5, 16] #Angle C7-CH-O2
             ] 
 
 #              [16, 5, 15], #Angle O2-CH-O1
 #              [15, 4, 3], #Angle O1-C3-C2
 #              [16, 6, 7] #Angle O2-C4-C5
     subquads = [
-#            [15, 4, 3,2], #Angle O1-C3-C2-C1
-#            [5, 15, 4, 3], #Angle CH-O1-C3-C2
-#            [16, 5, 15, 6], #Angle O1-CH-O2-C4
-            [16, 6, 7, 8], #Angle O2-C4-C5-C6
-            [5 ,16, 6, 7], #Angle CH-O2-C4-C5
-            [16, 5, 15, 4], #Angle O2-CH-O1-C3
+            [15, 4, 3,2], #Angle O1-C3-C2-C1
+            [5, 15, 4, 3], #Angle CH-O1-C3-C2
+            [16, 5, 15, 6], #Angle O1-CH-O2-C4
+#            [16, 6, 7, 8], #Angle O2-C4-C5-C6
+#            [5 ,16, 6, 7], #Angle CH-O2-C4-C5
+#            [16, 5, 15, 4], #Angle O2-CH-O1-C3
             ] 
     nbins = 300
     dr = 3.5/float(nbins)
@@ -73,8 +73,8 @@ def main():
     dihedhist = np.zeros(shape=(len(subquads), nbins))
     while True:
         framenum += 1
-#        if framenum%10 != 0:
-#            continue
+        if framenum > 5:
+            break
         try:
             frame = read_lammps_dump(filename, index=framenum)
         except IndexError as e:

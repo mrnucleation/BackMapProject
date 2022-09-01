@@ -16,7 +16,7 @@ print(Y.shape)
 model = loadmodel(X_total, Y_total)
 print(X)
 
-opt = tf.keras.optimizers.Adam(learning_rate = 0.005)
+opt = tf.keras.optimizers.Adam(learning_rate = 0.001)
 #lossfunc = tf.keras.losses.MeanAbsoluteError()
 lossfunc = tf.keras.losses.MeanSquaredError()
 model.compile(

@@ -12,6 +12,7 @@ from ase.io.lammpsrun import read_lammps_dump
 def main():
     filename = sys.argv[1]
     framenum = -1
+    model, model2 = loadlmodel()    
     while True:
         framenum += 1
         try:
@@ -20,6 +21,8 @@ def main():
             print("End of File")
             break
         cgfeatures = computecg(frame)
+        predictfeat = model.predict(cgfeatures)
+
 
 
 #==================================================
