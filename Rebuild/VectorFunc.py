@@ -1,32 +1,51 @@
-import numpy as np
-
+#import numpy as np
+import jax.numpy as np
 
 #=====================================================
-def computedist(r, atm1,atm2):
-    r12 = r[atm1,:]-r1[atm2,:]
+def periodic(r, cell):
+    r = np.where(r < -cell*0.5, r+cell, r)
+    r = np.where(r > cell*0.5, r-cell, r)
+    return r
+#=====================================================
+def computedist(r, atm1, atm2, cell):
+    r12 = r[atm1,:]-r[atm2,:]
+    r12 = periodic(r12, cell)
     dist = np.linalg.norm(r12)
     return dist
 #=====================================================
-def computeangle(r, atm1, atm2, atm3):
-    r12 = r[atm1,:]-r1[atm2,:]
-    r32 = r[atm3,:]-r1[atm2,:]
+def computeangle(r, atm1, atm2, atm3, cell):
+    r12 = r[atm1,:]-r[atm2,:]
+    r12 = periodic(r12, cell)
+
+    r32 = r[atm3,:]-r[atm2,:]
+    r32 = periodic(r32, cell)
+
     dot1 = np.dot(r32, r12)
     angle = np.arccos(dot1)
     return angle
 #=====================================================
-def computetorsion(r, atm1, atm2, atm3, atm4):
-    r12 = r[atm2,:]-r1[atm1,:]
-    r32 = r[atm3,:]-r1[atm2,:]
-    r43 = r[atm4,:]-r1[atm3,:]
+def computetorsion(r, atm1, atm2, atm3, atm4, cell):
+    r21 = r[atm2,:]-r[atm1,:]
+    r21 = periodic(r21, cell)
+
+    r32 = r[atm3,:]-r[atm2,:]
+    r32 = periodic(r32, cell)
+
+    r43 = r[atm4,:]-r[atm3,:]
+    r43 = periodic(r43, cell)
+
     v1 = np.cross(r21, r32)
     v2 = np.cross(r32, r43)
     v3 = np.cross(v1, r32)
     dot1 = np.dot(v1, v2)
     dot2 = np.dot(v2, v3)
-    angle = np.arctan2(dotv2, dotv1)
+    angle = np.arctan2(dot2, dot1)
+    angle += np.pi
+    if np.isnan(angle):
+        raise ValueError("NaN detected in torsion calculation")
     return angle
 #=====================================================
-def vectorgen(v1, r2, bond_ang, phi, v2)
+def vectorgen(v1, r2, bond_ang, phi, v2):
     r1 = np.linalg.norm(v1)
 
     s_term = np.sin(phi)
