@@ -1,18 +1,14 @@
 import os
-import sys
-from math import sin, cos, pi, floor, sqrt
-from scipy.fftpack import fftn, fftshift, ifftn
-from scipy.signal import correlate
 import numpy as np
 import jax.numpy as jnp
 from jax import grad, jit
 import sys
 import tensorflow as tf
 
-from Model import ModelPipe, SimpleKeras
+from Model import ModelPipe
 from GeoList import cg_geolist, aa_geolist
 from LoadData import loadmodel
-from VectorFunc import computedist, computeangle, computetorsion
+from VectorFunc import computedist, computeangle, computetorsion, vectorgen
 
 
 from ase.io.lammpsrun import read_lammps_dump 
@@ -58,7 +54,7 @@ def main():
 
 
 #==================================================
-def preprocess(frame, ):
+def preprocess(frame):
     # Sets up the data 
     typemap = {
             "H": 'CH2',
@@ -94,7 +90,8 @@ def preprocess(frame, ):
     ub = atomspermol - 1
     for i in range(nmols):
         molpos = positions[lb:ub, :]
-        molpos = np.concatenate([molpos] + newatoms, axis=0) 
+        molpos = np.concatenate([molpos] + newatoms, axis=0)
+        #What needs to happen: Code that takes
 
         molpos = np.concatenate([molpos] + newatoms, axis=0)
 
