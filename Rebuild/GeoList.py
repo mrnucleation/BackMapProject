@@ -94,7 +94,7 @@ def aa_geolist():
             ] 
     return subpairs, subtrips, subquads, paireqs, trip_eqs
 
-
+#[C, O, N, CH3, C, O, N, CH3]
 #=======================================================
 def groupdata(nn_features):
     #Atoms that need to be regrown: 15, 16, 17, 18, 19,20,21,22

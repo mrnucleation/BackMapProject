@@ -34,7 +34,6 @@ def main():
         predictfeat = pipe(cgfeatures)
         aa_positions, newtypes = preprocess(frame, predictfeat)
         outframe = ase.Atoms(newtypes, positions=aa_positions)
-        outframe = frame.set_positions(aa_positions)
         outframe.wrap()
         outframe.write(outfile % (framenum), format='lammps-dump-text')
 
@@ -76,8 +75,7 @@ def preprocess(frame, nn_features):
     newtypes = []
     for i in range(nmols):
         molpos = positions[lb:ub, :]
-        curtypes = moltypes[lb:ub]
-
+        curtypes = moltypes[lb:ub] + ['C', 'O', 'N', 'CH3', 'C', 'O', 'N', 'CH3']
         newatoms = np.zeros(shape=(8, 3))
         molpos = np.concatenate([molpos] + newatoms, axis=0)
         while len(atomqueue) > 0:
@@ -92,6 +90,7 @@ def preprocess(frame, nn_features):
             v1 = unittorsion(v3, v2, r_bond, theta_bond, tors_angle)
             molpos[nextatom, :] = v1 + molpos[prevlist[0], :]
         newcoords.append(molpos)
+        newtypes = newtypes + curtypes
         lb += atomspermol
         ub += atomspermol
     newcoords = np.concatenate(newcoords, axis=0)
