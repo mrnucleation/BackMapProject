@@ -1,14 +1,12 @@
 import os
 import numpy as np
-import jax.numpy as jnp
-from jax import grad, jit
 import sys
 import tensorflow as tf
-
+import ase
 from Model import ModelPipe
-from GeoList import cg_geolist, aa_geolist
+from GeoList import cg_geolist, aa_geolist, groupdata
 from LoadData import loadmodel
-from VectorFunc import computedist, computeangle, computetorsion, vectorgen
+from VectorFunc import computedist, computeangle, computetorsion, unittorsion, periodic
 
 
 from ase.io.lammpsrun import read_lammps_dump 
@@ -24,7 +22,6 @@ def main():
     outfile = 'outproc%s.lammpstrj'
     model = loadmodel()    
     pipe = ModelPipe(model)
-    stategrad = grad(computestate)
     while True:
         framenum += 1
         try:
@@ -32,29 +29,17 @@ def main():
         except IndexError as e:
             print("End of File")
             break
-        dimensions = frame.get_cell().lengths()
         cgfeatures = computecg(frame)
         predictfeat = pipe(cgfeatures)
-        aa_positions, nmols = preprocess(frame)
-        aa_positions = jnp.array(aa_positions)
-        lrate = 1e-4
-        for iloop in range(10):
-            val = computestate(aa_positions, nmols, predictfeat, dimensions)
-            print(val)
-            curgrad = stategrad(aa_positions, nmols, predictfeat, dimensions)
-            aa_positions -= lrate*curgrad
-            if iloop%5 == 0:
-                val = computestate(aa_positions, nmols, predictfeat, dimensions)
-                print(iloop, val)
-            else:
-                print(iloop)
+        aa_positions, newtypes = preprocess(frame, predictfeat)
+        outframe = ase.Atoms(newtypes, positions=aa_positions)
         outframe = frame.set_positions(aa_positions)
         outframe.wrap()
         outframe.write(outfile%(framenum), format='lammps-dump-text')
 
 
 #==================================================
-def preprocess(frame):
+def preprocess(frame, nn_features):
     # Sets up the data 
     typemap = {
             "H": 'CH2',
@@ -67,7 +52,6 @@ def preprocess(frame):
     atomtypes = frame.get_chemical_symbols()
     atomtypes = [typemap[atom] for atom in atomtypes]
     moltypes = []
-    subid = 0
     subatomids = []
     molid = -1
 
@@ -88,13 +72,25 @@ def preprocess(frame):
     newcoords = [] 
     lb = 0
     ub = atomspermol - 1
+    atomqueue, regrowdata = groupdata(nn_features)
+    newtypes = []
     for i in range(nmols):
         molpos = positions[lb:ub, :]
-        molpos = np.concatenate([molpos] + newatoms, axis=0)
-        #What needs to happen: Code that takes
+        curtypes = moltypes[lb:ub]
 
+        newatoms = np.zeros(shape=(8,3))
         molpos = np.concatenate([molpos] + newatoms, axis=0)
-
+        while len(atomqueue) > 0:
+            nextatom = atomqueue.pop(0)
+            #[17, 4, 3], 1.54, 109.5, torsion
+            prevlist, r_bond, theta_bond, tors_list = regrowdata[nextatom]
+            tors_angle = tors_list[i]
+            v2 = molpos[prevlist[1], :] - molpos[prevlist[0], :]
+            v2 = periodic(v2, cell)
+            v3 = molpos[prevlist[2], :] - molpos[prevlist[0], :]
+            v3 = periodic(v3, cell)
+            v1 = unittorsion(v3, v2, r_bond, theta_bond, tors_angle)
+            molpos[nextatom, :] = v1 + molpos[prevlist[0], :]
         newcoords.append(molpos)
         lb += atomspermol
         ub += atomspermol
@@ -102,10 +98,7 @@ def preprocess(frame):
 
     print(newcoords.shape)
 
-    return newcoords, nmols
-
-
-    
+    return newcoords, newtypes
  #===================================================================
 def computecg(frame):
     typemap = {
