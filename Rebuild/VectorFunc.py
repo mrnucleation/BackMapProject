@@ -1,5 +1,5 @@
-#import numpy as np
-import jax.numpy as np
+import numpy as np
+#import jax.numpy as np
 
 #=====================================================
 def periodic(r, cell):
@@ -52,17 +52,17 @@ def vectorgen(v1, r2, bond_ang, phi):
     c_term = np.cos(phi)      
     r_proj = np.linalg.norm(v1[0:2])
         
-    coeff = np.zeros(size=3)
+    coeff = np.zeros(shape=3)
     coeff[0] = (r2/r1)*np.cos(bond_ang)
     coeff[1] = (r2/r_proj)*np.sin(bond_ang)
     coeff[2] = coeff[1]/r1
 
-    w2 = np.zeros(size=3)
+    w2 = np.zeros(shape=3)
     w2[0] = -v1[1]
     w2[1] =  v1[0]
     w2 *= c_term
 
-    w3 = np.zeros(size=3)
+    w3 = np.zeros(shape=3)
     w3[0] = -v1[0]*v1[2]
     w3[1] = -v1[1]*v1[2]
     w3[2] =  r_proj**2
@@ -92,7 +92,7 @@ def unittorsion(v1,v2,r3,bond_ang,tors_angle):
     y1_s =  (-v2[1]*v1_u[0] + v2[1]*v1_u[1]) / r_proj
     z1_s =  (-v2[0]*v2[2]*v1_u[0] - v2[1]*v2[2]*v1_u[1] + r_proj*r_proj*v1_u[2]) / (r_proj*r2)
     #Calculate the torsional rotation angle for the new v3 vector from the v1 components
-    rot_angle = np.atan2(z1_s, y1_s)
+    rot_angle = np.arctan2(z1_s, y1_s)
     rot_angle = rot_angle + tors_angle
 
     #Rescale the angle between (0, 2pi)
@@ -108,7 +108,7 @@ def unittorsion(v1,v2,r3,bond_ang,tors_angle):
     coeff2 = (r3/r_proj)*np.sin(bond_ang)
     coeff3 = coeff2/r2
 
-    v3 = np.zeros(size=3)
+    v3 = np.zeros(shape=3)
     v3[0] = coeff1*v2[0] - coeff2*c_term*v2[1] - coeff3*s_term*v2[0]*v2[2]
     v3[1] = coeff1*v2[1] + coeff2*c_term*v2[0] - coeff3*s_term*v2[1]*v2[2]
     v3[2] = coeff1*v2[2]                       + coeff3*s_term*(r_proj*r_proj)

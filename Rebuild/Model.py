@@ -1,6 +1,6 @@
 import tensorflow as tf
 from keras import backend as K
-import jax.numpy as np
+import numpy as np
 
 class SimpleKeras(tf.keras.Model):
 

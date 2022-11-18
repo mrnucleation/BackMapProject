@@ -21,6 +21,6 @@ def loaddata():
 def loadmodel(X_total, Y_total):
     ninfeat = Y_total.shape[1]
     noutfeat = Y_total.shape[1]
-#    model = SimpleKeras(inlayer=ninfeat, outlayer=noutfeat)
-    model = tf.keras.models.load_model("backmap107.model")
+    model = SimpleKeras(inlayer=ninfeat, outlayer=noutfeat)
+#    model = tf.keras.models.load_model("backmap107.model")
     return model

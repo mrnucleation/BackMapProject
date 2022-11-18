@@ -35,7 +35,7 @@ def main():
         aa_positions, newtypes = preprocess(frame, predictfeat)
         outframe = ase.Atoms(newtypes, positions=aa_positions)
         outframe.wrap()
-        outframe.write(outfile % (framenum), format='lammps-dump-text')
+        outframe.write(outfile % (framenum), format='lammps-data')
 
 
 # ==================================================
@@ -47,8 +47,10 @@ def preprocess(frame, nn_features):
         "Li": 'CH3',
         "Be": 'CH',
     }
+    print(nn_features.shape)
     positions = frame.get_positions()
-    cell = frame.get_cell()
+    cell = frame.get_cell().lengths()
+    print(cell)
     atomtypes = frame.get_chemical_symbols()
     atomtypes = [typemap[atom] for atom in atomtypes]
     moltypes = []
@@ -70,19 +72,26 @@ def preprocess(frame, nn_features):
     print("natoms:", natoms)
     newcoords = []
     lb = 0
-    ub = atomspermol - 1
+    ub = atomspermol 
     atomqueue, regrowdata = groupdata(nn_features)
     newtypes = []
     for i in range(nmols):
+        print(positions.shape)
         molpos = positions[lb:ub, :]
-        curtypes = moltypes[lb:ub] + ['C', 'O', 'N', 'CH3', 'C', 'O', 'N', 'CH3']
-        newatoms = np.zeros(shape=(8, 3))
-        molpos = np.concatenate([molpos] + newatoms, axis=0)
+        print(lb, ub)
+        print(molpos.shape)
+        curtypes = moltypes[lb:ub-2] + ['C', 'O', 'N', 'C', 'C', 'O', 'N', 'C']
+        newatoms = np.zeros(shape=(6, 3))
+        molpos = np.concatenate([molpos,newatoms], axis=0)
+        print(molpos.shape)
         while len(atomqueue) > 0:
             nextatom = atomqueue.pop(0)
             # [17, 4, 3], 1.54, 109.5, torsion
             prevlist, r_bond, theta_bond, tors_list = regrowdata[nextatom]
+            nextatom -= 1
+            prevlist = [x-1 for x in prevlist]
             tors_angle = tors_list[i]
+            print(nextatom, prevlist)
             v2 = molpos[prevlist[1], :] - molpos[prevlist[0], :]
             v2 = periodic(v2, cell)
             v3 = molpos[prevlist[2], :] - molpos[prevlist[0], :]

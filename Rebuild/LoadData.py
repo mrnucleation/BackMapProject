@@ -19,5 +19,5 @@ def loaddata():
     return X_total, Y_total
 
 def loadmodel():
-    model = tf.keras.models.load_model("backmap140.model")
+    model = tf.keras.models.load_model("backmap115.model")
     return model
