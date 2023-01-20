@@ -1,27 +1,26 @@
 import numpy as np
-#import jax.numpy as np
+import jax.numpy as jnp
 
 #=====================================================
 def periodic(r, cell):
-    r = np.where(r < -cell*0.5, r+cell, r)
-    r = np.where(r > cell*0.5, r-cell, r)
+    r = np.where(r < 0.0, r+cell, r)
+    r = np.where(r > cell, r-cell, r)
     return r
 #=====================================================
-def computedist(r, atm1, atm2, cell):
+def computedist(r, atm1, atm2):
     r12 = r[atm1,:]-r[atm2,:]
-    r12 = periodic(r12, cell)
-    dist = np.linalg.norm(r12)
+    dist = jnp.linalg.norm(r12)
     return dist
 #=====================================================
-def computeangle(r, atm1, atm2, atm3, cell):
+def computeangle(r, atm1, atm2, atm3):
     r12 = r[atm1,:]-r[atm2,:]
-    r12 = periodic(r12, cell)
+#    r12 = periodic(r12, cell)
 
     r32 = r[atm3,:]-r[atm2,:]
-    r32 = periodic(r32, cell)
+#    r32 = periodic(r32, cell)
 
-    dot1 = np.dot(r32, r12)
-    angle = np.arccos(dot1)
+    dot1 = jnp.dot(r32, r12)
+    angle = jnp.arccos(dot1)
     return angle
 #=====================================================
 def computetorsion(r, atm1, atm2, atm3, atm4, cell):

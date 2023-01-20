@@ -1,6 +1,7 @@
 import tensorflow as tf
 from keras import backend as K
 import numpy as np
+from math import pi
 
 class SimpleKeras(tf.keras.Model):
 
@@ -47,4 +48,5 @@ class ModelPipe():
             Y_frag = self.model(xfrag)
             Y_out.append(Y_frag.numpy())
         Y_out = np.concatenate(Y_out, axis=1)
+        Y_out = Y_out*2.0*pi
         return Y_out

@@ -48,7 +48,7 @@ def aa_geolist():
               [21, 22], #Pair N2-CH3
               [17, 6], #Pair N2-CH2(Butyl)
             ]
-    paireqs = [1.54 for pair in subpairs]
+    paireqs = [0.154 for pair in subpairs]
     subtrips = [
             [5, 15, 16], #CH-C=O1
             [5, 15, 17], #CH-C(=O1)-N
@@ -99,17 +99,18 @@ def aa_geolist():
 def groupdata(nn_features):
     #Atoms that need to be regrown: 15, 16, 17, 18, 19,20,21,22
     #Prefered order: 17, 15, 18, 16 // 21, 19, 22, 20
+    print(nn_features)
     outqueue = [17, 15, 18, 16, 21, 19, 22, 20]
     featuretable = {
-        15: ([17, 4, 3], 1.54, 109.5, nn_features[:, 1]),
-        16: ([15, 17, 4], 1.54, 120.0,nn_features[:, 2]),
-        17: ([4, 3, 2], 1.54, 109.5,  nn_features[:, 4]),
-        18: ([17, 4, 3], 1.54, 109.5, nn_features[:, 3]),
+        15: ([17, 4, 3], 0.154, 109.5, nn_features[1]),
+        16: ([15, 17, 4], 0.154, 120.0,nn_features[2]),
+        17: ([4, 3, 2], 0.154, 109.5,  nn_features[4]),
+        18: ([17, 4, 3], 0.154, 109.5, nn_features[3]),
 
-        19: ([21, 6, 7], 1.54, 109.5, nn_features[:, 6]),
-        20: ([19, 21, 6], 1.54, 120.0,nn_features[:, 7]),
-        21: ([6, 7, 8], 1.54, 109.5,nn_features[:, 9]),
-        22: ([21, 6, 7], 1.54, 109.5, nn_features[:, 8]),
+        19: ([21, 6, 7], 0.154, 109.5, nn_features[6]),
+        20: ([19, 21, 6], 0.154, 120.0,nn_features[7]),
+        21: ([6, 7, 8], 0.154, 109.5,nn_features[9]),
+        22: ([21, 6, 7], 0.154, 109.5, nn_features[8]),
     }
     return outqueue, featuretable
 #=======================================================
