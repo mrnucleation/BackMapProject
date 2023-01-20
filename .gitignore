@@ -2,4 +2,4 @@
 !.gitignore
 !*/
 !*.py
-/.idea/.gitignore
+!/.idea/.gitignore

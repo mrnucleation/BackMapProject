@@ -1,4 +1,4 @@
-
+from math import pi
 
 
 #=======================================================
@@ -46,9 +46,18 @@ def aa_geolist():
               [20, 19], #Pair C = O2
               [21, 19], #Pair C(=O2)-N
               [21, 22], #Pair N2-CH3
-              [17, 6], #Pair N2-CH2(Butyl)
+              [21, 6], #Pair N2-CH2(Butyl)
             ]
     paireqs = [0.154 for pair in subpairs]
+    #15 = C
+    #16 = O1
+    #17 = N1
+    #18 = CH3
+
+    #19 = C
+    #20 = O2
+    #21 = N2
+    #22 = CH3
     subtrips = [
             [5, 15, 16], #CH-C=O1
             [5, 15, 17], #CH-C(=O1)-N
@@ -57,11 +66,11 @@ def aa_geolist():
             [18, 17, 15], #CH3-N-C(=O1)
             [18, 17, 4], #CH3-N-CH2
 
-            [5, 19, 20], #CH-C=O1
-            [5, 19, 21], #CH-C(=O1)-N
-            [21, 19, 20], #N1-C=O1
-            [6, 21, 19], #CH2-N-C(=O1)
-            [22, 21, 19], #CH3-N-C(=O1)
+            [5, 19, 20], #CH-C=O2
+            [5, 19, 21], #CH-C(=O2)-N
+            [21, 19, 20], #N1-C=O2
+            [6, 21, 19], #CH2-N-C(=O2)
+            [22, 21, 19], #CH3-N-C(=O2)
             [22, 21, 6], #CH3-N-CH2
             ] 
     trip_eqs = [
@@ -79,6 +88,7 @@ def aa_geolist():
             109.5,
             109.5
             ]
+    trips_eqs = [120.0*pi/180.0 for x in trip_eqs]
     subquads = [
             [5, 15, 17, 4], #CH-C(O1)-N1-CH2
             [15, 17, 4, 3], #C(O1)-N1-CH2-CH2

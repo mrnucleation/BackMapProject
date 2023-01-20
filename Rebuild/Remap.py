@@ -6,6 +6,8 @@ from Model import ModelPipe
 from GeoList import cg_geolist, aa_geolist, groupdata
 from LoadData import loadmodel
 from VectorFunc import computedist, computeangle, computetorsion, unittorsion, periodic
+from random import randint, random
+from math import log, pi
 
 import jax.numpy as jnp
 from jax import grad, jit
@@ -101,6 +103,8 @@ def preprocess(frame, nn_features):
             nextatom = atomqueue.pop(0)
             # [17, 4, 3], 1.54, 109.5, torsion
             prevlist, r_bond, theta_bond, tors_angle = regrowdata[nextatom]
+            theta_bond *= pi/180.0
+            print(theta_bond)
             nextatom -= 1
             prevlist = [x-1 for x in prevlist]
 #            tors_angle = tors_list[i]
@@ -124,7 +128,7 @@ def preprocess(frame, nn_features):
 
         for x,t in zip(molpos, curtypes):
             print("%s %s %s %s"%(t, x[0], x[1], x[2]))
-        molpos = relaxgeometry(molpos)
+        molpos = relaxgeometry2(molpos)
 
         for x,t in zip(molpos, curtypes):
             print("%s %s %s %s"%(t, x[0], x[1], x[2]))
@@ -203,11 +207,32 @@ def computecg(frame):
     features = np.array(moloutput)
     print("Features:", features.shape)
     return features
-
 # ===================================================================
 def relaxgeometry(molpos):
-    lrate = 1e-8
+    curpos = np.copy(molpos)
+
+    maxatom = 16 + 8 - 2 - 1
+    ecur = computestate(molpos)
+    for i in range(10000):
+        newpos = np.copy(curpos)
+        natom = randint(14, maxatom)
+        dr = 0.02 * np.random.uniform(-1.0, 1.0, size=(3))
+#        print(natom, dr)
+        newpos[natom,:] += dr
+#        print(curpos - newpos)
+
+        enew = computestate(newpos)
+        if log(random()) < -(enew-ecur)/200.0:
+            print(enew, ecur)
+            ecur = enew
+            curpos = newpos
+    return curpos
+
+# ===================================================================
+def relaxgeometry2(molpos):
+    lrate = 5.4e-8
     curpos = jnp.array(molpos)
+
     for i in range(1000):
         test = computestate(curpos)
         gradient = grad(computestate)(curpos)
@@ -220,8 +245,13 @@ def relaxgeometry(molpos):
 def computestate(positions):
     
     psu_eng = jnp.float64(0.0)
-    forceconst = jnp.float64(1e2)
+    forceconst = jnp.float64(1e4)
+    angforceconst = jnp.float64(1e1)
 
+
+#    psu_eng = 0.0
+#    forceconst = 1e7
+#    angforceconst = 1e5
     atomspermol = 16 + 8 - 2
     subpairs, subtrips, subquads, pair_eqs, trips_eqs = aa_geolist()
 #    print(psu_eng)
@@ -230,16 +260,17 @@ def computestate(positions):
         atm1 = sub1 - 1
         atm2 = sub2 - 1
         r12 = computedist(positions, atm1, atm2)
-#        print(atm1, atm2, r12)
-        psu_eng += forceconst * (r12 - eq) ** 2
+        eng = forceconst * (r12 - eq) ** 2
+#        print(atm1, atm2, r12, eng)
+        psu_eng += eng
 
     for triplet, eq in zip(subtrips, trips_eqs):
         sub1, sub2, sub3 = tuple(triplet)
         atm1 = sub1 - 1
         atm2 = sub2 - 1
         atm3 = sub3 - 1
-        ang = computeangle(positions, atm1, atm2, atm3)
-        psu_eng += forceconst * (ang - eq) ** 2
+        ang = computeangle(positions, atm1, atm2, atm3) 
+        psu_eng += angforceconst * (ang - eq) ** 2
 
 #    print(psu_eng)
 #       for quad, eq in zip(subquads, quad_eqs):
