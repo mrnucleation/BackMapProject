@@ -37,6 +37,7 @@ def main():
         outframe = ase.Atoms(newtypes, positions=aa_positions, cell=cell)
         outframe.wrap()
         outframe.write(outfile % (framenum), format='lammps-data')
+        quit()
 
 
 # ==================================================
@@ -57,7 +58,7 @@ def preprocess(frame, nn_features):
     print(nn_features.shape)
     positions = frame.get_positions()
     cell = frame.get_cell().lengths()
-    print(cell)
+#    print(cell)
     atomtypes = frame.get_chemical_symbols()
     atomtypes = [typemap[atom] for atom in atomtypes]
     moltypes = []
@@ -77,62 +78,76 @@ def preprocess(frame, nn_features):
 
     newatompermol = atomspermol - 2 + 8  # Removing the two pseudo atoms and replacing it with all 4x2 real atoms
     natoms = newatompermol * nmols
-    print("natoms:", natoms)
+#    print("newatompermol:", newatompermol)
+#    print("natoms:", natoms)
     newcoords = []
     lb = 0
     ub = atomspermol 
     newtypes = []
     for i in range(nmols):
         molpos = positions[lb:ub, :]
-        atm1 = molpos[0, :]
+        atm1 = np.copy(molpos[0, :])
         molpos[:,:] = molpos[:, :] - atm1
-        print(cell)
+#        print(cell)
         for j, x in enumerate(molpos):
-            print(molpos[j])
+#            print(molpos[j])
             molpos[j] = np.where(molpos[j] > cell*0.5, molpos[j]-cell, molpos[j])
             molpos[j] = np.where(molpos[j] < -cell*0.5, molpos[j]+cell, molpos[j])
-            print(molpos[j])
+#            print(molpos[j])
         curtypes = atomtypes[lb:ub-2] + ['C', 'O', 'N', 'C', 'C', 'O', 'N', 'C']
         atomqueue, regrowdata = groupdata(nn_features[i, :])
-        print(curtypes)
+#        print(curtypes)
         newatoms = np.zeros(shape=(6, 3))
         molpos = np.concatenate([molpos,newatoms], axis=0)
-        print(molpos.shape)
-        print(atomqueue)
+#        print(molpos.shape)
+#        print()
+#        print(molpos)
+#        print()
+#        print(atomqueue)
         while len(atomqueue) > 0:
+#            print()
             nextatom = atomqueue.pop(0)
+
             # [17, 4, 3], 1.54, 109.5, torsion
             prevlist, r_bond, theta_bond, tors_angle = regrowdata[nextatom]
             theta_bond *= pi/180.0
-            print(theta_bond)
             nextatom -= 1
             prevlist = [x-1 for x in prevlist]
+            atomtype = curtypes[nextatom]
 #            tors_angle = tors_list[i]
-            print(nextatom, prevlist)
-            print(r_bond, theta_bond, tors_angle)
+#            print(atomtype, nextatom, prevlist)
+#            print(r_bond, theta_bond, tors_angle)
             v2 = molpos[prevlist[1], :] - molpos[prevlist[0], :]
-            v2 = periodic(v2, cell)
-            print("v2:",v2)
+#            v2 = periodic(v2, cell)
+#            print("v2:",v2)
             v3 = molpos[prevlist[2], :] - molpos[prevlist[0], :]
-            print("v3:",v3)
-            v3 = periodic(v3, cell)
-            print("v2:",v2)
-            print("v3:",v3)
-            v1 = unittorsion(v3, v2, r_bond, theta_bond, tors_angle)
-            print("v_new:",v1)
-            print("molpos:", molpos[prevlist[0], :])
-            molpos[nextatom, :] = v1 + molpos[prevlist[0], :]
-            print("molpos_new:", molpos[nextatom, :])
+#            print("v3:",v3)
+#            v3 = periodic(v3, cell)
+            vnew = unittorsion(v3, v2, r_bond, theta_bond, tors_angle)
+
+#            print("v_new:",vnew)
+#            print("molpos:", molpos[prevlist[0], :])
+            molpos[nextatom, :] = vnew + molpos[prevlist[0], :]
+            testang = computetorsion(molpos, nextatom, prevlist[0], prevlist[1], prevlist[2])
+#            print("molpos_new:", molpos[nextatom, :])
+#            print("New Angle:", testang)
         molpos = molpos + atm1
         newcoords.append(molpos)
+#        with open("backmap.xyz", "w") as outfile:
+#            outfile.write("%s \n" % (newatompermol+1))
+#            outfile.write("\n")
+#            outfile.write("C 0.0 0.0 0.0\n")
+#            for x,t in zip(molpos, curtypes):
+#                outfile.write("%s %s %s %s\n"%(t, x[0], x[1], x[2]))
+#        molpos = relaxgeometry(molpos)
+#        molpos = relaxgeometry2(molpos)
+#        with open("postopt.xyz", "w") as outfile:
+#            outfile.write("%s \n" % (newatompermol+1))
+#            outfile.write("\n")
+#            outfile.write("C 0.0 0.0 0.0\n")
+#            for x,t in zip(molpos, curtypes):
+#                outfile.write("%s %s %s %s\n"%(t, x[0], x[1], x[2]))
 
-        for x,t in zip(molpos, curtypes):
-            print("%s %s %s %s"%(t, x[0], x[1], x[2]))
-        molpos = relaxgeometry2(molpos)
-
-        for x,t in zip(molpos, curtypes):
-            print("%s %s %s %s"%(t, x[0], x[1], x[2]))
-        quit()
         newtypes = newtypes + curtypes
         lb += atomspermol
         ub += atomspermol
@@ -213,7 +228,7 @@ def relaxgeometry(molpos):
 
     maxatom = 16 + 8 - 2 - 1
     ecur = computestate(molpos)
-    for i in range(10000):
+    for i in range(200):
         newpos = np.copy(curpos)
         natom = randint(14, maxatom)
         dr = 0.02 * np.random.uniform(-1.0, 1.0, size=(3))
@@ -222,15 +237,22 @@ def relaxgeometry(molpos):
 #        print(curpos - newpos)
 
         enew = computestate(newpos)
-        if log(random()) < -(enew-ecur)/200.0:
+        ediff =  -(enew-ecur)/300.0 
+        accept = False
+
+        if  ediff >= 0.0: 
+            accept = True
+        elif  ediff >  log(random()) :
+            accept = True
+        if accept:
             print(enew, ecur)
             ecur = enew
-            curpos = newpos
+            curpos = np.copy(newpos)
     return curpos
 
 # ===================================================================
 def relaxgeometry2(molpos):
-    lrate = 5.4e-8
+    lrate = 8.4e-5
     curpos = jnp.array(molpos)
 
     for i in range(1000):
@@ -238,14 +260,17 @@ def relaxgeometry2(molpos):
         gradient = grad(computestate)(curpos)
         gradient = gradient.at[:11,:].set(0.0)
         curpos -= lrate * gradient
-        print(gradient)
+        print(test)
+
+        if test < 1e-1:
+            break
     return np.array(curpos)
     
 # ===================================================================
 def computestate(positions):
     
     psu_eng = jnp.float64(0.0)
-    forceconst = jnp.float64(1e4)
+    forceconst = jnp.float64(1e3)
     angforceconst = jnp.float64(1e1)
 
 
@@ -254,6 +279,7 @@ def computestate(positions):
 #    angforceconst = 1e5
     atomspermol = 16 + 8 - 2
     subpairs, subtrips, subquads, pair_eqs, trips_eqs = aa_geolist()
+    trips_eqs = [x*np.pi/180.0 for x in trips_eqs]
 #    print(psu_eng)
     for pair, eq in zip(subpairs, pair_eqs):
         sub1, sub2 = tuple(pair)
@@ -261,7 +287,7 @@ def computestate(positions):
         atm2 = sub2 - 1
         r12 = computedist(positions, atm1, atm2)
         eng = forceconst * (r12 - eq) ** 2
-#        print(atm1, atm2, r12, eng)
+#        print(atm1+1, atm2+1, r12, eng)
         psu_eng += eng
 
     for triplet, eq in zip(subtrips, trips_eqs):
@@ -270,6 +296,8 @@ def computestate(positions):
         atm2 = sub2 - 1
         atm3 = sub3 - 1
         ang = computeangle(positions, atm1, atm2, atm3) 
+        eng = angforceconst * (ang - eq) ** 2
+#        print(atm1+1, atm2+1, atm3+1, ang, eq, eng)
         psu_eng += angforceconst * (ang - eq) ** 2
 
 #    print(psu_eng)

@@ -1,5 +1,5 @@
-import numpy as np
-import jax.numpy as jnp
+#import numpy as np
+import jax.numpy as np
 
 #=====================================================
 def periodic(r, cell):
@@ -9,7 +9,7 @@ def periodic(r, cell):
 #=====================================================
 def computedist(r, atm1, atm2):
     r12 = r[atm1,:]-r[atm2,:]
-    dist = jnp.linalg.norm(r12)
+    dist = np.linalg.norm(r12)
     return dist
 #=====================================================
 def computeangle(r, atm1, atm2, atm3):
@@ -19,19 +19,44 @@ def computeangle(r, atm1, atm2, atm3):
     r32 = r[atm3,:]-r[atm2,:]
 #    r32 = periodic(r32, cell)
 
-    dot1 = jnp.dot(r32, r12)
-    angle = jnp.arccos(dot1)
+    dot1 = np.dot(r32, r12)
+    dot1 /= (np.linalg.norm(r32) * np.linalg.norm(r12))
+    angle = np.arccos(dot1)
     return angle
 #=====================================================
-def computetorsion(r, atm1, atm2, atm3, atm4, cell):
+def computetorsion(r, atm1, atm2, atm3, atm4):
+
+    b1 = r[atm2,:] - r[atm1,:]
+    b2 = r[atm3,:] - r[atm2,:]
+    b3 = r[atm4,:] - r[atm3,:]
+
+
+    # Define the normal vectors for the planes formed by the vectors
+    n1 = np.cross(b1, b2)
+    n2 = np.cross(b2, b3)
+
+    # Normalize the normal vectors
+    n1 /= np.linalg.norm(n1)
+    n2 /= np.linalg.norm(n2)
+
+    # Compute the angle between the normal vectors
+    angle = np.arccos(np.dot(n1, n2))
+
+    # Define the sign of the angle
+    sign = np.sign(np.dot(np.cross(n1, n2), b2))
+
+    return sign * angle + np.pi
+#=====================================================
+def computetorsion2(r, atm1, atm2, atm3, atm4):
+    print(atm1, atm2, atm3, atm4)
     r21 = r[atm2,:]-r[atm1,:]
-    r21 = periodic(r21, cell)
+#    r21 = periodic(r21, cell)
 
     r32 = r[atm3,:]-r[atm2,:]
-    r32 = periodic(r32, cell)
+#    r32 = periodic(r32, cell)
 
     r43 = r[atm4,:]-r[atm3,:]
-    r43 = periodic(r43, cell)
+#    r43 = periodic(r43, cell)
 
     v1 = np.cross(r21, r32)
     v2 = np.cross(r32, r43)
@@ -74,8 +99,9 @@ def vectorgen(v1, r2, bond_ang, phi):
 #    v2(2) = coeff1*v1(2) + coeff2*c_term*v1(1) - coeff3*s_term*v1(2)*v1(3)
 #    v2(3) = coeff1*v1(3)                       + coeff3*s_term*(r_proj*r_proj)
     return v2
+
 #===============================================================
-def unittorsion(v1,v2,r3,bond_ang,tors_angle):
+def unittorsion2(v1,v2,r3,bond_ang,tors_angle):
     #Code is converted from Fortran
 #    r2 = v2[1]*v2[1] + v2[2]*v2[2] + v2[3]*v2[3]
 #    r2 = sqrt(r2]
@@ -92,6 +118,8 @@ def unittorsion(v1,v2,r3,bond_ang,tors_angle):
     z1_s =  (-v2[0]*v2[2]*v1_u[0] - v2[1]*v2[2]*v1_u[1] + r_proj*r_proj*v1_u[2]) / (r_proj*r2)
     #Calculate the torsional rotation angle for the new v3 vector from the v1 components
     rot_angle = np.arctan2(z1_s, y1_s)
+
+#    print(rot_angle, tors_angle, rot_angle+tors_angle)
     rot_angle = rot_angle + tors_angle
 
     #Rescale the angle between (0, 2pi)
@@ -112,5 +140,116 @@ def unittorsion(v1,v2,r3,bond_ang,tors_angle):
     v3[1] = coeff1*v2[1] + coeff2*c_term*v2[0] - coeff3*s_term*v2[1]*v2[2]
     v3[2] = coeff1*v2[2]                       + coeff3*s_term*(r_proj*r_proj)
 
+
     return v3
+
+#===============================================================
+def unittorsion(v1, v2, r3, bond_ang, tors_angle):
+
+    #Rebuilds a new atom from the positions of 3 other atoms
+    #along with the bond distance, angle, and torsional angle
+    #
+    #v1 - v2 - v3
+
+    v1_u = v1-v2
+
+    w1 = np.copy(v2)
+    w1 /= np.linalg.norm(w1)
+#    print("w1",w1)
+
+    w2 = np.array([w1[1], -w1[0], 0.0])
+    w2 /= np.linalg.norm(w2)
+#    print("w2",w2)
+
+    w3 = np.cross(w1, w2)
+    w3 /= np.linalg.norm(w3)
+
+    vec_mat = np.stack([w1, w2, w3], axis=1).transpose()
+    vec_mat_inv = np.linalg.inv(vec_mat)
+#    print(vec_mat)
+#    print(vec_mat_inv)
+#    print("w3",w3)
+
+#    print("check:",np.dot(w1,w2))
+#    print("check:",np.dot(w1,w3))
+#    print("check:",np.dot(w2,w3))
+
+    y1_s = np.dot(v1_u, w2)
+    z1_s = np.dot(v1_u, w3)
+
+    v1_angle = np.arctan2(z1_s, y1_s)
+    v1_angle = anglebounds(v1_angle)
+#    print("Torsion", v1_angle, tors_angle, v1_angle+tors_angle)
+
+    #Determine the new position we need to rotate the vector to in order to create
+    #the proper torsional geometry.
+
+
+#    print("bond ang",bond_ang)
+    c_theta = np.cos(bond_ang)
+    s_theta = np.sin(bond_ang)
+#    print("bond ang cos", c_theta)
+#    print("bond ang sin", s_theta)
+
+
+    rotmat1 = np.array([[c_theta, s_theta, 0.0],[-s_theta, c_theta, 0.0], [0.0, 0.0, 1.0]])
+#    print("rot1")
+#    print(rotmat1)
+
+
+    c = np.array([r3, 0.0, 0.0])
+#    print("c:", c)
+    c = np.matmul(rotmat1, c) #Rotate it along the x,y axis to create the bond angle
+#    print(c)
+#    print("Rot 1 Mag:", np.linalg.norm(c))
+
+    #Figure out where the new vector is located in the y-z axis and figure out where we need move it to.
+    cur_angle = np.arctan2(c[2], c[1]) 
+    cur_angle = anglebounds(cur_angle)
+#    print("v1_angle:",v1_angle)
+#    print("cur_angle:",cur_angle)
+    phi = -(v1_angle + tors_angle - cur_angle)
+    phi = anglebounds(phi)
+
+    c_phi = np.cos(phi)
+    s_phi = np.sin(phi)
+
+#    print("dihedral ang ", phi)
+#    print("dihedral ang cos", c_phi)
+#    print("dihedral ang sin", s_phi)
+    rotmat2 = np.array([[1.0, 0.0, 0.0], [0.0, c_phi, s_phi],[0.0, -s_phi, c_phi] ])
+
+#    print("rot2")
+#    print(rotmat2)
+    c = np.matmul(rotmat2, c) #Rotate it along the y,z axis to create the dihedral angle
+    v3 = np.matmul(vec_mat_inv, c)
+#    print(v3)
+#    print(np.linalg.norm(v3))
+#    print(np.arccos(np.dot(v3,v2)))
+
+#    testang = np.arccos(np.dot(v3, v2) / (np.linalg.norm(v3) * np.linalg.norm(v2)))
+#    print("post rot", testang)
+#    print("post rot mag", np.linalg.norm(v3))
+
+    v1_s = np.array([np.dot(v1_u, w2), np.dot(v1_u, w3)])
+    v3_s = np.array([np.dot(v3, w2), np.dot(v3, w3)])
+
+    testang = np.arccos(np.dot(v3_s, v1_s) / (np.linalg.norm(v3_s) * np.linalg.norm(v1_s)))
+#    print("post phi", testang)
+
+
+    y3_s = np.dot(v3, w2) 
+    z3_s = np.dot(v3, w3)
+    cur_angle = np.arctan2(z3_s, y3_s)
+#    print(cur_angle, v1_angle)
+
+#    print()
+    return v3
+#============================
+def anglebounds(angle):
+    while angle < 0.0:
+       angle = angle + 2.0*np.pi
+    while angle > 2.0*np.pi:
+       angle = angle - 2.0*np.pi
+    return angle
 #=====================================================
