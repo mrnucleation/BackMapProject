@@ -9,12 +9,12 @@ from VectorFunc import computedist, computeangle, computetorsion, unittorsion, p
 from random import randint, random
 from math import log, pi
 
+import optax
+import jax
 import jax.numpy as jnp
 from jax import grad, jit
 
 from ase.io.lammpsrun import read_lammps_dump
-
-
 
 # ==================================================
 def main():
@@ -133,20 +133,21 @@ def preprocess(frame, nn_features):
 #            print("New Angle:", testang)
         molpos = molpos + atm1
         newcoords.append(molpos)
-#        with open("backmap.xyz", "w") as outfile:
-#            outfile.write("%s \n" % (newatompermol+1))
-#            outfile.write("\n")
-#            outfile.write("C 0.0 0.0 0.0\n")
-#            for x,t in zip(molpos, curtypes):
-#                outfile.write("%s %s %s %s\n"%(t, x[0], x[1], x[2]))
+        with open("backmap.xyz", "w") as outfile:
+            outfile.write("%s \n" % (newatompermol+1))
+            outfile.write("\n")
+            outfile.write("C 0.0 0.0 0.0\n")
+            for x,t in zip(molpos, curtypes):
+                outfile.write("%s %s %s %s\n"%(t, x[0], x[1], x[2]))
 #        molpos = relaxgeometry(molpos)
-#        molpos = relaxgeometry2(molpos)
-#        with open("postopt.xyz", "w") as outfile:
-#            outfile.write("%s \n" % (newatompermol+1))
-#            outfile.write("\n")
-#            outfile.write("C 0.0 0.0 0.0\n")
-#            for x,t in zip(molpos, curtypes):
-#                outfile.write("%s %s %s %s\n"%(t, x[0], x[1], x[2]))
+        molpos = relaxgeometry2(molpos)
+        with open("postopt.xyz", "w") as outfile:
+            outfile.write("%s \n" % (newatompermol+1))
+            outfile.write("\n")
+            outfile.write("C 0.0 0.0 0.0\n")
+            for x,t in zip(molpos, curtypes):
+                outfile.write("%s %s %s %s\n"%(t, x[0], x[1], x[2]))
+        quit()
 
         newtypes = newtypes + curtypes
         lb += atomspermol
@@ -252,17 +253,20 @@ def relaxgeometry(molpos):
 
 # ===================================================================
 def relaxgeometry2(molpos):
-    lrate = 8.4e-5
+    lrate = 5.2e-2
     curpos = jnp.array(molpos)
-
+    optimizer = optax.adam(lrate)
+    opt_state = optimizer.init(curpos)
     for i in range(1000):
-        test = computestate(curpos)
-        gradient = grad(computestate)(curpos)
+#        test = computestate(curpos)
+        test, gradient = jax.value_and_grad(computestate)(curpos)
         gradient = gradient.at[:11,:].set(0.0)
-        curpos -= lrate * gradient
+        updates, opt_state = optimizer.update(gradient, opt_state)
+        curpos = optax.apply_updates(curpos, updates)
+#        curpos -= lrate * gradient
         print(test)
 
-        if test < 1e-1:
+        if test < 5e-2:
             break
     return np.array(curpos)
     
@@ -270,7 +274,7 @@ def relaxgeometry2(molpos):
 def computestate(positions):
     
     psu_eng = jnp.float64(0.0)
-    forceconst = jnp.float64(1e3)
+    forceconst = jnp.float64(1e2)
     angforceconst = jnp.float64(1e1)
 
 

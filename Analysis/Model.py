@@ -7,15 +7,17 @@ class SimpleKeras(tf.keras.Model):
   def __init__(self, inlayer=7, outlayer=14):
     super().__init__()
     lrelu = lambda x: tf.keras.activations.relu(x, alpha=0.1)
-    self.dense1 = tf.keras.layers.Dense(inlayer, activation=lrelu)
-    self.dense2 = tf.keras.layers.Dense(27, activation=lrelu)
-    self.dense3 = tf.keras.layers.Dense(27, activation=lrelu)
-#    self.dense4 = tf.keras.layers.Dense(1, activation=tf.nn.relu)
-    self.dense4 = tf.keras.layers.Dense(1, activation=tf.nn.tanh)
-    self.dense5 = tf.keras.layers.Dense(inlayer+1, activation=lrelu)
-    self.dense6 = tf.keras.layers.Dense(25, activation=lrelu)
-    self.dense7 = tf.keras.layers.Dense(25, activation=lrelu)
-    self.dense8 = tf.keras.layers.Dense(outlayer-1, activation=tf.nn.tanh)
+    self.layerlist = []
+    for iVar in range(outlayer):
+        layer = []
+        dense1 = tf.keras.layers.Dense(inlayer+iVar, activation=lrelu)
+        dense2 = tf.keras.layers.Dense(17, activation=lrelu)
+        dense3 = tf.keras.layers.Dense(17, activation=lrelu)
+        dense4 = tf.keras.layers.Dense(1, activation=tf.nn.tanh)
+        layer.append([dense1, dense2, dense3, dense4])
+        layerlist.append(layer)
+    
+
 
   def call(self, inputs):
     x = self.dense1(inputs)
